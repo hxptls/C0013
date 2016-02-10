@@ -176,25 +176,58 @@ for key in important_info_key_list:
         content_lines = content.splitlines()
         simple_info = dict()
         for line in content_lines:
-            def get_info_after_colon(string):
+            def get_info_after_colon_chinese(string):
                 return string.split('：')[-1].lstrip()
+
+            def get_info_after_colon_english(string):
+                return string.split(':')[-1].lstrip()
+
+            def get_info_after_colon(string):
+                if string.find('：') != -1:
+                    return get_info_after_colon_chinese(string)
+                if string.find(':') != -1:
+                    return get_info_after_colon_english(string)
+                return ''
 
             if line.find('赛区') != -1:
                 simple_info['赛区'] = get_info_after_colon(line)
             if line.find('全称') != -1:
-                simple_info['全称'] = get_info_after_colon(line)
+                full_name = get_info_after_colon(line)
+                full_name = full_name.replace(' ', '')
+                full_name = full_name.replace('＆', '&')
+                simple_info['全称'] = full_name
             if line.find('名称') != -1:
                 # I'm so sorry to give you such a name, my son.
                 tiebas = get_info_after_colon(line)
+                # TODO: Tiebas split with '/'
                 tieba_list = tiebas.split(' ')
                 if tieba_list == ['']:
                     tieba_list = []
+                # I will give 100 to this bug...
+                for tieba in tieba_list:
+                    index = tieba.find('【此处应有自拍】')
+                    if index != -1:
+                        tieba_list.remove(tieba)
+                        tieba = tieba[:index] + \
+                                tieba[index + len('【此处应有自拍】'):]
+                        tieba_list.append(tieba)
+                # This bug is so strong! How could you survive!
+                while '' in tieba_list:
+                    tieba_list.remove('')
+                # I just can't stand of this.
+                for tieba in tieba_list:
+                    new_list = tieba.split('/')
+                    if len(new_list) > 1:
+                        tieba_list.remove(tieba)
+                        for tieba in new_list:
+                            tieba_list.append(tieba)
+
                 simple_info['贴吧'] = tieba_list
         # Check the info we fetched.
         if ('赛区' in simple_info.keys() and
             '全称' in simple_info.keys() and
             '贴吧' in simple_info.keys()):
-             important_info_list.append(simple_info)
+            important_info_list.append(simple_info)
         else:
             print('ERROR I can not read info of this floor.')
             print('FLOOR NUMBER %d' % real_floor['floor'].floor_index)
@@ -202,6 +235,23 @@ for key in important_info_key_list:
             print(content)
             print('INFO You can add this manually.')
             print('ERROR END')
-    # test
-    print(important_info_list)
-    break
+    print('[^_^]')
+
+    printl('Organizing data...')
+    final_info = dict()
+    final_info['作品'] = name
+    final_info['地址'] = href
+    final_info['cp列表'] = important_info_list
+    print('[^_^]')
+
+    printl('Transforming to json...')
+    info_in_json = json.dumps(final_info, indent=4, ensure_ascii=False)
+    print('[^_^]')
+
+    printl('Writing file...')
+    file = open(os.path.join(os.getcwd(), name + '.json'), mode='w')
+    print(info_in_json, file=file)
+    file.close()
+    print('[^_^]')
+print('Finished! Congratulations!')
+print('Copyright 2016 Hexapetalous. All rights reserved.')
