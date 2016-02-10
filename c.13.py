@@ -11,6 +11,7 @@ printl('Initializing...')
 import P0009.btbb as p9b
 import P0009.btbbc as p9c
 from optparse import OptionParser
+import json
 
 # STEP 1 API(s) #
 DATA_FILE_PATH = '/home/wan/N_E_I_H version1.0/C0013/233.txt'  # Default path
@@ -129,3 +130,78 @@ for item in info.values():
         important_info[name] = item['href']
 
 print('%d exists, %d on the way.' % (already_had_count, not_have_yet_count))
+
+# STEP 5 Fetch #
+print('Fetching start!...')
+# ...Then I realized that it needs to be in a kind of order.
+# Or when you figure out a broken post page, it doesn't restart from that.
+# It will hurt your feelings.
+# So...sh*t
+important_info_key_list = [key for key in important_info]
+important_info_key_list.sort()
+for key in important_info_key_list:
+    name = key
+    href = important_info[name]
+    print('Fetching %s...' % name)
+    print('URL %s' % href)
+
+    title = p9b.get_title_from_url(href)
+    print('TITLE %s' % title)
+    if title.find(name) == -1:
+        print('WARN The title does not contain %s.' % name)
+        print('Something may be wrong.')
+    post = p9c.Post(href)
+    post.match()
+    post.migration()
+    floors = post.get_real_floors()
+    if not floors:
+        print('ERROR Can not get info from url.')
+        break
+
+    important_info_list = list()
+    for real_floor in floors:
+        if real_floor['comments'] is None:
+            continue
+        if real_floor['floor'].floor_index == 1:
+            continue
+        passed = False
+        for comment in real_floor['comments']:
+            if comment.content.find('已通过') != -1:
+                passed = True
+                break
+        if not passed:
+            continue
+
+        content = real_floor['floor'].content
+        content_lines = content.splitlines()
+        simple_info = dict()
+        for line in content_lines:
+            def get_info_after_colon(string):
+                return string.split('：')[-1].lstrip()
+
+            if line.find('赛区') != -1:
+                simple_info['赛区'] = get_info_after_colon(line)
+            if line.find('全称') != -1:
+                simple_info['全称'] = get_info_after_colon(line)
+            if line.find('名称') != -1:
+                # I'm so sorry to give you such a name, my son.
+                tiebas = get_info_after_colon(line)
+                tieba_list = tiebas.split(' ')
+                if tieba_list == ['']:
+                    tieba_list = []
+                simple_info['贴吧'] = tieba_list
+        # Check the info we fetched.
+        if ('赛区' in simple_info.keys() and
+            '全称' in simple_info.keys() and
+            '贴吧' in simple_info.keys()):
+             important_info_list.append(simple_info)
+        else:
+            print('ERROR I can not read info of this floor.')
+            print('FLOOR NUMBER %d' % real_floor['floor'].floor_index)
+            print('FLOOR CONTENT(follow lines)')
+            print(content)
+            print('INFO You can add this manually.')
+            print('ERROR END')
+    # test
+    print(important_info_list)
+    break
