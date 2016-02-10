@@ -14,7 +14,7 @@ from optparse import OptionParser
 
 # STEP 1 API(s) #
 DATA_FILE_PATH = '/home/wan/N_E_I_H version1.0/C0013/233.txt'  # Default path
-RESULT_DIR_PATH = '/home/wan/N_E_I_H version1.0/C0013/result/'  # Default path
+RESULT_DIR_PATH = '/home/wan/N_E_I_H version1.0/C0013/result'  # Default path
 print('[^_^]')
 
 # STEP 2 Parser #
@@ -99,5 +99,33 @@ print('ROOT URL %s' % root_url)
 print('ROOT TITLE %s' % root_title)
 print('TOTAL CHILD COUNT %d' % len(info))
 
-# STEP 4 Fetch #
-# STEP 5 Write file #
+# STEP 4 Check #
+print('Checking how many you have already got...')
+import os
+if os.path.isdir(RESULT_DIR_PATH) is False:
+    print('ERROR %s is not a dir.' % RESULT_DIR_PATH)
+    exit()
+dir_name = os.path.join(RESULT_DIR_PATH, root_title.split('_')[0])
+if os.path.isdir(dir_name) is False:
+    print('A-ha! There is nothing at all!')
+    printl('Create containing dir...')
+    os.mkdir(dir_name)
+    print('[^_^]')
+
+printl('Change dir to %s...' % dir_name)
+os.chdir(dir_name)
+print('[^_^]')
+
+important_info = dict()
+already_had_count = 0
+not_have_yet_count = 0
+for item in info.values():
+    name = item['name']
+    file_name = name + '.json'
+    if os.path.exists(file_name):
+        already_had_count += 1
+    else:
+        not_have_yet_count += 1
+        important_info[name] = item['href']
+
+print('%d exists, %d on the way.' % (already_had_count, not_have_yet_count))
